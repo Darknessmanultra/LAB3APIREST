@@ -6,3 +6,8 @@ It serves as a reference implementation for building clean, maintainable, and sc
 
 ---
 &copy; 2026 Arquitectura de Sistemas, DISC, UCN, Chile. All rights reserved.
+
+
+Notes:
+- Added Delete functions to link repository and link service
+- Implemented Endpoints for LAB_3 at endpoints folder

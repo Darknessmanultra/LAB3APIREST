@@ -79,4 +79,22 @@ public sealed class LinkService : ILinkService
         _logger.LogInformation("Retrieved {Count} links for userId: {UserId}.", links.Count, userId);
         return links.Select(LinkResponse.From).ToList();
     }
+
+    public async Task<bool> DeleteLink(string shortUrl)
+    {
+        _logger.LogDebug("Deleting link: {shorturl}",shortUrl);
+        var link = await _linkRepository.GetByShortUrlAsync(shortUrl);
+
+        if(link==null)
+        {
+            _logger.LogWarning("Link not found: {shortUrl}.", shortUrl);
+            return false;
+        }
+
+        await _linkRepository.DeleteAsync(link);
+        await _linkRepository.SaveChangesAsync();
+
+        _logger.LogInformation("Successfully deleted link: {shortUrl}.",shortUrl);
+        return true;
+    }
 }

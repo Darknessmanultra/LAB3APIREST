@@ -13,4 +13,6 @@ public interface ILinkService
     Task<List<LinkResponse>> GetAllLinks();
 
     Task<List<LinkResponse>> GetLinksByUserId(long userId);
+
+    Task<bool> DeleteLink(string shortUrl);
 }

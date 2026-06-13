@@ -31,4 +31,10 @@ public sealed class LinkRepository : ILinkRepository
 
     public Task SaveChangesAsync()
         => _context.SaveChangesAsync();
+    
+    public async Task DeleteAsync(Link link)
+    {
+        _context.Links.Remove(link);
+        await Task.CompletedTask;
+    }
 }

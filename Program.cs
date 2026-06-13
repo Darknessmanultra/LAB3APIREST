@@ -114,6 +114,9 @@ app.MapScalarApiReference();
 // Maps the redirect endpoint GET /{shortUrl} from Endpoints/UrlRedirectEndpoint.cs
 app.MapUrlRedirect();
 
+// Maps the LAB_3 endpoints from Endpoints/LAB3Endpoints.cs
+app.MapLab3Endpoints();
+
 // Creates a scope for scoped services (e.g. AppDbContext)
 using (var scope = app.Services.CreateScope())
 {

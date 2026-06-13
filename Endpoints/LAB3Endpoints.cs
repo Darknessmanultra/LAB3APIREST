@@ -1,4 +1,5 @@
 using Shortly.Application.Interfaces;
+using Shortly.Domain.Entities;
 
 namespace Shortly.Endpoints;
 
@@ -16,7 +17,7 @@ public static class Lab3Endpoints
 
         group.MapDelete("/{id}", DeleteLink);
 
-        group.MapGet("/{id}/stats", GetStats);
+        group.MapGet("/stats", GetStats);
 
         return app;
     }
@@ -33,36 +34,46 @@ public static class Lab3Endpoints
         return Results.Ok(await service.GetAllLinks());
     }
 
-    private static async Task<IResult> GetLink(string shortUrl,ILinkService service)
+    private static async Task<IResult> GetLink(LinkRequest request,ILinkService service)
     {
-        var link = await service.GetLink(shortUrl);
+        var link = await service.GetLink(request.Url);
 
         return link is null
             ? Results.NotFound()
             : Results.Ok(link);
     }
 
-    private static async Task<IResult> DeleteLink(string shortUrl,ILinkService service)
+    private static async Task<IResult> DeleteLink(DeleteLinkRequest request,ILinkService service)
     {
-        var deleted = await service.DeleteLink(shortUrl);
+        var deleted = await service.DeleteLink(request.Url);
 
         return deleted
             ? Results.NoContent()
             : Results.NotFound();
     }
 
-    private static async Task<IResult> GetStats(
-        string id,
-        ILinkService service)
+    private static async Task<IResult> GetStats(ILinkService service)
     {
-        var link = await service.GetLink(id);
+        var links = await service.GetAllLinks();
 
-        return link is null
-            ? Results.NotFound()
-            : Results.Ok(new
+        return Results.Ok(new
+    {
+        TotalLinks = links.Count,
+        TotalClicks = links.Sum(x => x.Clicks),
+        MostVisitedLink = links
+            .OrderByDescending(x => x.Clicks)
+            .Select(x => new
             {
-                link.Id,
-                link.Clicks,
-            });
+                x.Id,
+                x.Url,
+                x.Clicks
+            })
+            .FirstOrDefault(),
+        Links = links.Select(x => new
+        {
+            x.Id,
+            x.Clicks,
+        })
+    });
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Shortly.Application.Interfaces;
 using Shortly.Domain.Entities;
 
@@ -22,7 +23,7 @@ public static class Lab3Endpoints
         return app;
     }
 
-    private static async Task<IResult> CreateLink(LinkRequest request, ILinkService service)
+    private static async Task<IResult> CreateLink([FromBody] LinkRequest request,[FromServices] ILinkService service)
     {
         var link = await service.CreateLink(request.Url,request.Id);
 
@@ -34,7 +35,7 @@ public static class Lab3Endpoints
         return Results.Ok(await service.GetAllLinks());
     }
 
-    private static async Task<IResult> GetLink(LinkRequest request,ILinkService service)
+    private static async Task<IResult> GetLink([FromBody] LinkRequest request,[FromServices] ILinkService service)
     {
         var link = await service.GetLink(request.Url);
 
@@ -43,7 +44,7 @@ public static class Lab3Endpoints
             : Results.Ok(link);
     }
 
-    private static async Task<IResult> DeleteLink(DeleteLinkRequest request,ILinkService service)
+    private static async Task<IResult> DeleteLink([FromBody] DeleteLinkRequest request,[FromServices] ILinkService service)
     {
         var deleted = await service.DeleteLink(request.Url);
 

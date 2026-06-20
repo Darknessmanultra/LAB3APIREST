@@ -1,5 +1,7 @@
+using System.IO.Compression;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
@@ -43,6 +45,36 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
+// Gets a list of strings from appsetting to obtain allowed origins into a variable
+var allowedOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>() ?? [];
+
+//Register Cors
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("RestrictedCors", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .WithMethods(
+                "GET",
+                "POST",
+                "DELETE")
+            .WithHeaders(
+                "Content-Type",
+                "Accept",
+                "Authorization")
+            .WithExposedHeaders(
+                "ETag",
+                "Last-Modified",
+                "X-Response-Time")
+            .SetPreflightMaxAge(
+                TimeSpan.FromHours(1));
+    });
+});
+
 // Enables Swagger support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -63,6 +95,32 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode =
         StatusCodes.Status429TooManyRequests;
 });
+
+// Registers and configures compression services brotli and gzip
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+
+    options.MimeTypes =
+        ResponseCompressionDefaults.MimeTypes.Concat(
+        [
+            "application/json"
+        ]);
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(
+    options =>
+    {
+        options.Level = CompressionLevel.Fastest;
+    });
+
+builder.Services.Configure<GzipCompressionProviderOptions>(
+    options =>
+    {
+        options.Level = CompressionLevel.Fastest;
+    });
 
 // Registers the SQLite database context using Entity Framework Core
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -129,8 +187,8 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// UseCors must be called before UseResponseCaching
-app.UseCors();
+// Enables CORS with restrictive policy. UseCors must be called before UseResponseCaching
+app.UseCors("RestrictedCors");
 
 // Enables response caching
 app.UseResponseCaching();
@@ -143,6 +201,9 @@ app.UsePerformanceMeasurement();
 
 // Redirects HTTP requests to HTTPS automatically
 // app.UseHttpsRedirection();
+
+// Enables response compression
+app.UseResponseCompression();
 
 // Serves static files from the wwwroot/ folder
 app.UseStaticFiles();

@@ -35,13 +35,31 @@ public static class Lab3Endpoints
         return Results.Ok(await service.GetAllLinks());
     }
 
-    private static async Task<IResult> GetLink([FromBody] LinkRequest request,[FromServices] ILinkService service)
-    {
+    private static async Task<IResult> GetLink([FromBody] LinkRequest request,[FromServices] ILinkService service, HttpContext context)
+    {        
         var link = await service.GetLink(request.Url);
 
-        return link is null
-            ? Results.NotFound()
-            : Results.Ok(link);
+        if (link is null)
+        {
+            return Results.NotFound();
+        }
+
+        var etag = $"\"{link.Url}-{link.UpdatedAt.Ticks}\"";
+
+        if (context.Request.Headers.IfNoneMatch == etag)
+            {
+                return Results.StatusCode(
+                    StatusCodes.Status304NotModified);
+            }
+        
+        context.Response.Headers.CacheControl = "public,max-age=30";
+        context.Response.Headers.ETag = etag;
+        context.Response.Headers.LastModified =
+        link.UpdatedAt
+            .ToUniversalTime()
+            .ToString("R");
+
+        return Results.Ok(link);
     }
 
     private static async Task<IResult> DeleteLink([FromBody] DeleteLinkRequest request,[FromServices] ILinkService service)

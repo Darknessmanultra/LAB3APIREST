@@ -52,16 +52,32 @@ public sealed class LinkService : ILinkService
 
     public async Task<LinkResponse> GetLink(string shortUrl)
     {
-        _logger.LogDebug("Retrieving link with shortUrl: {ShortUrl}", shortUrl);
+        _logger.LogDebug("Retrieving link with shortUrl: {ShortUrl}.", shortUrl);
+        _logger.LogDebug("Attempting to retrieve link with cache key.");
+        var cacheKey = $"link:{shortUrl}";
 
+        if (_cache.TryGetValue(cacheKey, out Link? cached))
+        {
+            if (cached != null)
+            {
+                _logger.LogInformation("Link retrieved successfully from cache with shortUrl: {ShortUrl} and id: {Id}.", cached.Hash, cached.Id);
+                return LinkResponse.From(cached);
+            }
+        }
+
+        _logger.LogDebug("Attempting to retrieve link from database.");
         var link = await _linkRepository.GetByShortUrlAsync(shortUrl);
         if (link is null)
         {
             _logger.LogWarning("Link not found with shortUrl {ShortUrl}.", shortUrl);
             throw new KeyNotFoundException($"No link found with shortUrl '{shortUrl}'.");
         }
-
-        _logger.LogInformation("Link retrieved successfully with shortUrl: {ShortUrl} and id: {Id}.", link.ShortUrl, link.Id);
+        _logger.LogDebug("Setting cache key spanning for 30 minutes.");
+        _cache.Set(
+            cacheKey,
+            link,
+            TimeSpan.FromMinutes(30));
+        _logger.LogInformation("Link retrieved successfully with shortUrl: {ShortUrl} and id: {Id}.", link.Hash, link.Id);
         return LinkResponse.From(link);
     }
 
@@ -96,6 +112,8 @@ public sealed class LinkService : ILinkService
 
         await _linkRepository.DeleteAsync(link);
         await _linkRepository.SaveChangesAsync();
+
+        _cache.Remove($"link:{shortUrl}");
 
         _logger.LogInformation("Successfully deleted link: {shortUrl}.",shortUrl);
         return true;

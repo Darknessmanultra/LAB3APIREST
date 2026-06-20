@@ -45,6 +45,8 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Adds and configures response caching
+builder.Services.AddResponseCaching();
 
 // Registers the SQLite database context using Entity Framework Core
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -88,6 +90,34 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
 }
+
+// Implements Security header inline middleware
+app.Use(async (context, next) =>
+{
+    //Strict-Transport-Security forces browsers to use HTTPS
+    context.Response.Headers["Strict-Transport-Security"] =
+        "max-age=31536000; includeSubDomains";
+    //X-Content-Type-Options prevents MIME type sniffing attacks
+    context.Response.Headers["X-Content-Type-Options"] =
+        "nosniff";
+    //X-Frame-Options prevents clickjacking by blocking iframes
+    context.Response.Headers["X-Frame-Options"] =
+        "DENY";
+    //Referrer-Policy limits referrer information sent to other sites
+    context.Response.Headers["Referrer-Policy"] =
+        "strict-origin-when-cross-origin";
+    //Permissions-Policy disables browser features
+    context.Response.Headers["Permissions-Policy"] =
+        "camera=(), microphone=(), geolocation=()";
+
+    await next();
+});
+
+// UseCors must be called before UseResponseCaching
+app.UseCors();
+
+// Enables response caching
+app.UseResponseCaching();
 
 // Redirects HTTP requests to HTTPS automatically
 // app.UseHttpsRedirection();

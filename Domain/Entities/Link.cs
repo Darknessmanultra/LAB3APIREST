@@ -24,6 +24,8 @@ public class Link
     [Required]
     public string Hash {get;private set;} = null!;
 
+    public DateTime UpdatedAt {get;set;}
+
     [Required] public int Clicks { get; private set; }
 
     [ForeignKey(nameof(User))]
@@ -51,6 +53,7 @@ public class Link
 
         Clicks = 0;
         Hash = GenerateShortCode(ShortUrl);
+        UpdatedAt=DateTime.UtcNow;
     }
 
     

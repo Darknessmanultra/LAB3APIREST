@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Shortly.Application.DTOs;
 using Shortly.Application.Interfaces;
 using Shortly.Domain.Entities;
@@ -8,11 +9,13 @@ public sealed class LinkService : ILinkService
 {
     private readonly ILogger<LinkService> _logger;
     private readonly ILinkRepository _linkRepository;
+    private readonly IMemoryCache _cache;
 
-    public LinkService(ILinkRepository linkRepository, ILogger<LinkService> logger)
+    public LinkService(ILinkRepository linkRepository, ILogger<LinkService> logger, IMemoryCache cache)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _linkRepository = linkRepository ?? throw new ArgumentNullException(nameof(linkRepository));
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
     public async Task<LinkResponse> CreateLink(string url, long userId)
@@ -97,4 +100,5 @@ public sealed class LinkService : ILinkService
         _logger.LogInformation("Successfully deleted link: {shortUrl}.",shortUrl);
         return true;
     }
+    
 }

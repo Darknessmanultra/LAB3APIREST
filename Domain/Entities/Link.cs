@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 
 namespace Shortly.Domain.Entities;
@@ -18,6 +20,9 @@ public class Link
     [Required]
     [MaxLength(32)]
     public string ShortUrl { get; private set; } = null!;
+
+    [Required]
+    public string Hash {get;private set;} = null!;
 
     [Required] public int Clicks { get; private set; }
 
@@ -45,6 +50,16 @@ public class Link
             : throw new ArgumentOutOfRangeException(nameof(userId), "UserId must be greater than zero.");
 
         Clicks = 0;
+        Hash = GenerateShortCode(ShortUrl);
+    }
+
+    
+    private static string GenerateShortCode(string ShortUrl)
+    {
+        var bytes = SHA256.HashData(
+            Encoding.UTF8.GetBytes(ShortUrl));
+
+        return Convert.ToHexString(bytes)[..8];
     }
 
     public void IncrementClicks() => Clicks++;

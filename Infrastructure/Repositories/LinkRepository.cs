@@ -18,7 +18,7 @@ public sealed class LinkRepository : ILinkRepository
         => _context.Links.FirstOrDefaultAsync(l => l.Id == id);
 
     public Task<Link?> GetByShortUrlAsync(string shortUrl)
-        => _context.Links.AsNoTracking().FirstOrDefaultAsync(l => l.ShortUrl == shortUrl);
+        => _context.Links.AsNoTracking().FirstOrDefaultAsync(l => l.Hash == shortUrl);
 
     public Task<List<Link>> GetAllAsync()
         => _context.Links.AsNoTracking().ToListAsync();

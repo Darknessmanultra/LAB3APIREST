@@ -11,3 +11,5 @@ It serves as a reference implementation for building clean, maintainable, and sc
 Notes:
 - Added Delete functions to link repository and link service
 - Implemented Endpoints for LAB_3 at endpoints folder
+
+- Added Hash string to Link model

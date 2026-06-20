@@ -41,6 +41,11 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
+// Enables Swagger support
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+
 // Registers the SQLite database context using Entity Framework Core
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("AppDbContext")));
@@ -107,6 +112,10 @@ app.MapRazorPages().WithStaticAssets();
 
 // Exposes the OpenAPI document at /openapi/v1.json
 app.MapOpenApi();
+
+// Enables Swagger
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Serves the Scalar interactive API reference UI at /scalar/v1
 app.MapScalarApiReference();

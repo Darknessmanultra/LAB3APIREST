@@ -12,7 +12,7 @@ public class LinkResponse
     {
         Id = link.Id,
         Url = link.Url,
-        ShortUrl = link.ShortUrl,
+        ShortUrl = link.Hash,
         Clicks = link.Clicks
     };
 }

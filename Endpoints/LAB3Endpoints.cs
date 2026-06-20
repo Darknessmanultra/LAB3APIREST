@@ -10,15 +10,15 @@ public static class Lab3Endpoints
     {
         var group = app.MapGroup("/api/urls");
 
-        group.MapPost("/", CreateLink);
+        group.MapPost("/", CreateLink).RequireRateLimiting("api");
 
-        group.MapGet("/", GetAllLinks);
+        group.MapGet("/", GetAllLinks).RequireRateLimiting("api");
 
-        group.MapGet("/{id}", GetLink);
+        group.MapGet("/{id}", GetLink).RequireRateLimiting("api");
 
-        group.MapDelete("/{id}", DeleteLink);
+        group.MapDelete("/{id}", DeleteLink).RequireRateLimiting("api");
 
-        group.MapGet("/stats", GetStats);
+        group.MapGet("/stats", GetStats).RequireRateLimiting("api");
 
         return app;
     }

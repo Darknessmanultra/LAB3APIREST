@@ -18,6 +18,6 @@ public static class UrlRedirectEndpoint
             {
                 return Results.NotFound();
             }
-        });
+        }).RequireRateLimiting("api");
     }
 }

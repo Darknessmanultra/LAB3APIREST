@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
+using Shortly.Application.Helpers;
 using Shortly.Application.Interfaces;
 using Shortly.Application.Services;
 using Shortly.Endpoints;
@@ -47,6 +49,20 @@ builder.Services.AddSwaggerGen();
 
 // Adds and configures response caching
 builder.Services.AddResponseCaching();
+
+// Adds rate limiter
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("api", config =>
+    {
+        config.PermitLimit = 100;
+        config.Window = TimeSpan.FromMinutes(1);
+        config.QueueLimit = 0;
+    });
+
+    options.RejectionStatusCode =
+        StatusCodes.Status429TooManyRequests;
+});
 
 // Registers the SQLite database context using Entity Framework Core
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -118,6 +134,12 @@ app.UseCors();
 
 // Enables response caching
 app.UseResponseCaching();
+
+// Enables rate limiter
+app.UseRateLimiter();
+
+// Register performance middleware
+app.UsePerformanceMeasurement();
 
 // Redirects HTTP requests to HTTPS automatically
 // app.UseHttpsRedirection();

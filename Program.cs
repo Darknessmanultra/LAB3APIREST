@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -78,6 +79,36 @@ builder.Services.AddCors(options =>
 // Enables Swagger support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Enables and configures cookies
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "__Host-auth";
+        options.Cookie.Path = "/";
+
+        options.Cookie.HttpOnly = true;
+
+        options.Cookie.SecurePolicy =
+            CookieSecurePolicy.Always;
+
+        options.Cookie.SameSite =
+            SameSiteMode.Strict;
+
+        options.SlidingExpiration = true;
+    });
+builder.Services.Configure<CookiePolicyOptions>(
+    options =>
+    {
+        options.MinimumSameSitePolicy =
+            SameSiteMode.Strict;
+
+        options.HttpOnly =
+            HttpOnlyPolicy.Always;
+
+        options.Secure =
+            CookieSecurePolicy.Always;
+    });
 
 // Adds and configures response caching
 builder.Services.AddResponseCaching();
@@ -195,6 +226,27 @@ app.UseResponseCaching();
 
 // Enables rate limiter
 app.UseRateLimiter();
+
+// Enables cookie policy
+app.UseCookiePolicy();
+
+// Enforces that all cookies contains path=/
+app.Use(async (context, next) =>
+{
+    await next();
+
+    foreach (var cookie in context.Response.Headers.SetCookie)
+    {
+        if(cookie!=null)
+        {
+            if (!cookie.Contains("Path=/"))
+            {
+                throw new InvalidOperationException(
+                    "All cookies must use Path=/");
+            } 
+        }
+    }
+});
 
 // Register performance middleware
 app.UsePerformanceMeasurement();

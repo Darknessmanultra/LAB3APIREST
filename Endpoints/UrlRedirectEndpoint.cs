@@ -12,7 +12,11 @@ public static class UrlRedirectEndpoint
             {
                 var link = await linkService.GetLink(shortUrl);
                 await linkService.IncrementClicks(link.Id);
-                return Results.Redirect(link.Url);
+                if(link.Clicks>100)
+                {
+                    return Results.Redirect(link.Url,true);
+                }
+                return Results.Redirect(link.Url,false,true);
             }
             catch (KeyNotFoundException)
             {

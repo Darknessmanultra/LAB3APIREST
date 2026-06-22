@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Compression;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.CookiePolicy;
@@ -25,7 +26,16 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 // Tells the host to use Serilog as its logging system
-builder.Host.UseSerilog();
+builder.Host.UseSerilog((context, services, config) =>
+{
+    config
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .Enrich.WithMachineName()
+        .Enrich.WithEnvironmentName()
+        .Enrich.WithProcessId()
+        .Enrich.WithThreadId();
+});
 
 // Registers Razor Pages services
 builder.Services.AddRazorPages();
@@ -248,8 +258,35 @@ app.Use(async (context, next) =>
     }
 });
 
+// Register Request Tracing middleware
+app.UseMiddleware<RequestTracingMiddleware>();
+
 // Register performance middleware
 app.UsePerformanceMeasurement();
+
+// Register Serilog request logging
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext =
+        (diagnosticContext, httpContext) =>
+        {
+            diagnosticContext.Set(
+                "TraceId",
+                Activity.Current?.TraceId.ToString());
+
+            diagnosticContext.Set(
+                "CorrelationId",
+                httpContext.Response.Headers["X-Correlation-Id"].ToString());
+
+            diagnosticContext.Set(
+                "RequestHost",
+                httpContext.Request.Host.ToString());
+
+            diagnosticContext.Set(
+                "Scheme",
+                httpContext.Request.Scheme);
+        };
+});
 
 // Redirects HTTP requests to HTTPS automatically
 // app.UseHttpsRedirection();

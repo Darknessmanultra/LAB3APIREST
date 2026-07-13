@@ -268,6 +268,29 @@ app.MapHealthChecks(
         }
     });
 
+// robots.txt endpoint to disallow crawling of the shortener and avoid indexing of shortened URLs
+app.MapGet("/robots.txt", () =>
+{
+    return Results.Text(
+        """
+        User-agent: *
+        Disallow: /
+        """,
+        "text/plain");
+});
+
+// sitemaps.xml endpoint to avoid indexing of shortened URLs
+app.MapGet("/sitemap.xml", () =>
+{
+    const string sitemap = """
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</urlset>
+""";
+
+    return Results.Text(sitemap, "application/xml");
+});
+
 // Enables CORS with restrictive policy. UseCors must be called before UseResponseCaching
 app.UseCors("RestrictedCors");
 

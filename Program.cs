@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -188,6 +190,12 @@ builder.Services.AddSingleton<IConfigureOptions<CookieAuthenticationOptions>>(sp
         options => options.SessionStore = store);
 });
 
+// Register Health Checks
+builder.Services
+    .AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(
+        name: "sqlite");
+
 // Registers the authorization service
 builder.Services.AddAuthorization();
 
@@ -227,6 +235,38 @@ app.Use(async (context, next) =>
 
     await next();
 });
+
+// Map health checks endpoint
+app.MapHealthChecks(
+    "/health",
+    new HealthCheckOptions
+    {
+        ResponseWriter = async (context, report) =>
+        {
+            context.Response.ContentType =
+                "application/json";
+
+            await context.Response.WriteAsync(
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        status =
+                            report.Status.ToString(),
+                        checks =
+                            report.Entries.Select(x =>
+                                new
+                                {
+                                    name = x.Key,
+                                    status =
+                                        x.Value.Status
+                                            .ToString(),
+                                    duration =
+                                        x.Value.Duration
+                                            .TotalMilliseconds
+                                })
+                    }));
+        }
+    });
 
 // Enables CORS with restrictive policy. UseCors must be called before UseResponseCaching
 app.UseCors("RestrictedCors");

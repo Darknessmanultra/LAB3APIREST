@@ -205,6 +205,16 @@ builder.Services.AddScoped<ILinkRepository, LinkRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ILinkService, LinkService>();
 
+// Registers CQRS repositories, services and handlers
+builder.Services.AddScoped<ILinkReadRepository, LinkReadRepository>();
+builder.Services.AddScoped<ILinkWriteRepository, LinkWriteRepository>();
+builder.Services.AddScoped<ILinkService, LinkService>();
+builder.Services.AddScoped<CreateLinkHandler>();
+builder.Services.AddScoped<UpdateLinkHandler>(); //Update only works as a click increment
+builder.Services.AddScoped<DeleteLinkHandler>();
+builder.Services.AddScoped<GetLinkHandler>();
+builder.Services.AddScoped<GetAllLinks>();
+
 // Builds the application with all registered configurations
 var app = builder.Build();
 
@@ -390,6 +400,7 @@ app.MapUrlRedirect();
 
 // Maps the LAB_3 endpoints from Endpoints/LAB3Endpoints.cs
 app.MapLab3Endpoints();
+
 
 // Creates a scope for scoped services (e.g. AppDbContext)
 using (var scope = app.Services.CreateScope())

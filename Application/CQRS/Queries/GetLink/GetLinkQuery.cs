@@ -1,0 +1,1 @@
+public sealed record GetLinkQuery(string ShortUrl, long? UserId);

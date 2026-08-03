@@ -1,0 +1,1 @@
+public sealed record CreateLinkCommand(string OriginalUrl,long userId);

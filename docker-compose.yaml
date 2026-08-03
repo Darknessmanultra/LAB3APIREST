@@ -1,0 +1,21 @@
+services:
+  shortly-web:
+    build: .
+    container_name: shortly-web
+
+    ports:
+      - "8080:8080"
+    
+    environment:
+      ASPNETCORE_ENVIRONMENT=Production
+    
+    shortly-db:
+      container_name: shortly-db
+      volumes:
+       - sqlite-data: /app
+      
+    shortly-cache:
+      container_name: shortly-cache
+
+volumes:
+  sqlite-data

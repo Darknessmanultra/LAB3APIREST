@@ -1,0 +1,16 @@
+# .dockerignore
+node_modules/
+bar/
+bin/
+obj/
+.git/
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.user
+*.db
+*.md
+*.log
+docs/

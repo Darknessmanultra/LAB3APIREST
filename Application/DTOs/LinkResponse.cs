@@ -17,4 +17,13 @@ public class LinkResponse
         Clicks = link.Clicks,
         UpdatedAt = link.UpdatedAt
     };
+
+    public static LinkResponse From(LinkReadModel link) => new()
+    {
+        Id = link.UserId,
+        Url = link.OriginalUrl,
+        ShortUrl = link.Hash,
+        Clicks = link.TotalClicks,
+        UpdatedAt = link.LastAccessed
+    };
 }

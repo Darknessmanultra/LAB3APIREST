@@ -12,4 +12,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<User> Users { get; private set; } = null!;
 
     public DbSet<Link> Links { get; private set; } = null!;
+
+    public DbSet<LinkReadModel> LinkReadModels => Set<LinkReadModel>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Link>();
+
+        modelBuilder.Entity<LinkReadModel>()
+            .HasKey(x => x.ShortUrl);
+    }
 }

@@ -4,15 +4,15 @@ namespace Shortly.Application.Interfaces;
 
 public interface ILinkService
 {
-    Task<LinkResponse> CreateLink(string url, long userId);
+    Task<LinkResponse> CreateLink(CreateLinkCommand command);
 
-    Task<LinkResponse> IncrementClicks(long linkId);
+    Task<LinkResponse> IncrementClicks(UpdateLinkCommand command);
 
-    Task<LinkResponse> GetLink(string shortUrl);
+    Task<LinkResponse> GetLink(GetLinkQuery query);
 
     Task<List<LinkResponse>> GetAllLinks();
 
-    Task<List<LinkResponse>> GetLinksByUserId(long userId);
+    Task<List<LinkResponse>> GetLinksByUserId(GetLinkQuery query);
 
-    Task<bool> DeleteLink(string shortUrl);
+    Task<bool> DeleteLink(DeleteLinkCommand);
 }

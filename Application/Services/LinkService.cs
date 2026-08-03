@@ -8,53 +8,55 @@ namespace Shortly.Application.Services;
 public sealed class LinkService : ILinkService
 {
     private readonly ILogger<LinkService> _logger;
-    private readonly ILinkRepository _linkRepository;
+    private readonly ILinkReadRepository _linkReadRepository;
+    private readonly ILinkWriteRepository _linkWriteRepository;
     private readonly IMemoryCache _cache;
 
-    public LinkService(ILinkRepository linkRepository, ILogger<LinkService> logger, IMemoryCache cache)
+    public LinkService(ILinkReadRepository linkReadRepository, ILinkWriteRepository linkWriteRepository, ILogger<LinkService> logger, IMemoryCache cache)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _linkRepository = linkRepository ?? throw new ArgumentNullException(nameof(linkRepository));
+        _linkReadRepository = linkReadRepository ?? throw new ArgumentNullException(nameof(linkReadRepository));
+        _linkWriteRepository = linkWriteRepository ?? throw new ArgumentNullException(nameof(linkWriteRepository));
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
-    public async Task<LinkResponse> CreateLink(string url, long userId)
+    public async Task<LinkResponse> CreateLink(CreateLinkCommand command)
     {
-        _logger.LogDebug("Creating link for URL: {Url} and userId: {UserId}", url, userId);
+        _logger.LogDebug("Creating link for URL: {command.OriginalUrl} and userId: {Command.UserId}", command.OriginalUrl, command.userId);
 
         var shortUrl = Ulid.NewUlid().ToString()[..12].ToLowerInvariant();
-        var link = new Link(url, shortUrl, userId);
+        var link = new Link(command.OriginalUrl, shortUrl, command.userId);
 
-        await _linkRepository.AddAsync(link);
-        await _linkRepository.SaveChangesAsync();
+        await _linkWriteRepository.AddAsync(link);
+        await _linkWriteRepository.SaveChangesAsync();
 
         _logger.LogInformation("Link created successfully with shortUrl: {ShortUrl} and id: {Id}.", link.ShortUrl, link.Id);
         return LinkResponse.From(link);
     }
 
-    public async Task<LinkResponse> IncrementClicks(long linkId)
+    public async Task<LinkResponse> IncrementClicks(UpdateLinkCommand command)
     {
-        _logger.LogDebug("Incrementing clicks for linkId: {LinkId}", linkId);
+        _logger.LogDebug("Incrementing clicks for linkId: {command.ShortUrl}", command.ShortUrl);
 
-        var link = await _linkRepository.GetByIdAsync(linkId);
+        var link = await _linkWriteRepository.GetByIdAsync(command.ShortUrl);
         if (link is null)
         {
-            _logger.LogWarning("IncrementClicks failed: No link found with id {LinkId}.", linkId);
-            throw new KeyNotFoundException($"No link found with id '{linkId}'.");
+            _logger.LogWarning("IncrementClicks failed: No link found with id {command.ShortUrl}.", command.ShortUrl);
+            throw new KeyNotFoundException($"No link found with id '{command.ShortUrl}'.");
         }
 
         link.IncrementClicks();
-        await _linkRepository.SaveChangesAsync();
+        await _linkWriteRepository.SaveChangesAsync();
 
-        _logger.LogInformation("Clicks incremented for linkId: {LinkId}. Total clicks: {Clicks}.", link.Id, link.Clicks);
+        _logger.LogInformation("Clicks incremented for linkId: {command.ShortUrl}. Total clicks: {Clicks}.", link.Id, link.Clicks);
         return LinkResponse.From(link);
     }
 
-    public async Task<LinkResponse> GetLink(string shortUrl)
+    public async Task<LinkResponse> GetLink(GetLinkQuery command)
     {
-        _logger.LogDebug("Retrieving link with shortUrl: {ShortUrl}.", shortUrl);
+        _logger.LogDebug("Retrieving link with shortUrl: {command.ShortUrl}.", command.ShortUrl);
         _logger.LogDebug("Attempting to retrieve link with cache key.");
-        var cacheKey = $"link:{shortUrl}";
+        var cacheKey = $"link:{command.ShortUrl}";
 
         if (_cache.TryGetValue(cacheKey, out Link? cached))
         {
@@ -66,11 +68,11 @@ public sealed class LinkService : ILinkService
         }
 
         _logger.LogDebug("Attempting to retrieve link from database.");
-        var link = await _linkRepository.GetByShortUrlAsync(shortUrl);
+        var link = await _linkReadRepository.GetAsync(command.ShortUrl);
         if (link is null)
         {
-            _logger.LogWarning("Link not found with shortUrl {ShortUrl}.", shortUrl);
-            throw new KeyNotFoundException($"No link found with shortUrl '{shortUrl}'.");
+            _logger.LogWarning("Link not found with shortUrl {ShortUrl}.", command.ShortUrl);
+            throw new KeyNotFoundException($"No link found with shortUrl '{command.ShortUrl}'.");
         }
         _logger.LogDebug("Setting cache key spanning for 30 minutes.");
         _cache.Set(
@@ -84,38 +86,38 @@ public sealed class LinkService : ILinkService
     public async Task<List<LinkResponse>> GetAllLinks()
     {
         _logger.LogDebug("Retrieving all links from the database ..");
-        var links = await _linkRepository.GetAllAsync();
+        var links = await _linkReadRepository.GetAllAsync();
 
         _logger.LogInformation("Retrieved {Count} links from the database.", links.Count);
         return links.Select(LinkResponse.From).ToList();
     }
 
-    public async Task<List<LinkResponse>> GetLinksByUserId(long userId)
+    public async Task<List<LinkReadModel>> GetLinksByUserId(GetLinkQuery query)
     {
-        _logger.LogDebug("Retrieving links for userId: {UserId}", userId);
-        var links = await _linkRepository.GetByUserIdAsync(userId);
+        _logger.LogDebug("Retrieving links for userId: {query.UserId}", query.UserId);
+        var links = await _linkReadRepository.GetbyUserIdAsync(query.UserId);
 
-        _logger.LogInformation("Retrieved {Count} links for userId: {UserId}.", links.Count, userId);
-        return links.Select(LinkResponse.From).ToList();
+        //_logger.LogInformation("Retrieved {TotalClicks} links for userId: {query.UserId}.", links.TotalClicks, query.UserId);
+        return links;
     }
 
-    public async Task<bool> DeleteLink(string shortUrl)
+    public async Task<bool> DeleteLink(DeleteLinkCommand command)
     {
-        _logger.LogDebug("Deleting link: {shorturl}",shortUrl);
-        var link = await _linkRepository.GetByShortUrlAsync(shortUrl);
+        _logger.LogDebug("Deleting link: {command.ShortUrl}",command.ShortUrl);
+        var link = await _linkWriteRepository.GetByIdAsync(command.ShortUrl);
 
         if(link==null)
         {
-            _logger.LogWarning("Link not found: {shortUrl}.", shortUrl);
+            _logger.LogWarning("Link not found: {shortUrl}.", command.ShortUrl);
             return false;
         }
 
-        await _linkRepository.DeleteAsync(link);
-        await _linkRepository.SaveChangesAsync();
+        await _linkWriteRepository.DeleteAsync(link);
+        await _linkWriteRepository.SaveChangesAsync();
 
-        _cache.Remove($"link:{shortUrl}");
+        _cache.Remove($"link:{command.ShortUrl}");
 
-        _logger.LogInformation("Successfully deleted link: {shortUrl}.",shortUrl);
+        _logger.LogInformation("Successfully deleted link: {command.ShortUrl}.",command.ShortUrl);
         return true;
     }
     

@@ -83,16 +83,16 @@ public sealed class LinkService : ILinkService
         return LinkResponse.From(link);
     }
 
-    public async Task<List<LinkResponse>> GetAllLinks()
+    public async Task<List<LinkReadModel?>> GetAllLinks()
     {
         _logger.LogDebug("Retrieving all links from the database ..");
         var links = await _linkReadRepository.GetAllAsync();
 
         _logger.LogInformation("Retrieved {Count} links from the database.", links.Count);
-        return links.Select(LinkResponse.From).ToList();
+        return links;
     }
 
-    public async Task<List<LinkReadModel>> GetLinksByUserId(GetLinkQuery query)
+    public async Task<List<LinkReadModel?>> GetLinksByUserId(GetLinkQuery query)
     {
         _logger.LogDebug("Retrieving links for userId: {query.UserId}", query.UserId);
         var links = await _linkReadRepository.GetbyUserIdAsync(query.UserId);

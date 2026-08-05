@@ -10,9 +10,9 @@ public interface ILinkService
 
     Task<LinkResponse> GetLink(GetLinkQuery query);
 
-    Task<List<LinkResponse>> GetAllLinks();
+    Task<List<LinkReadModel?>> GetAllLinks();
 
-    Task<List<LinkResponse>> GetLinksByUserId(GetLinkQuery query);
+    Task<List<LinkResponse?>> GetLinksByUserId(GetLinkQuery query);
 
-    Task<bool> DeleteLink(DeleteLinkCommand);
+    Task<bool> DeleteLink(DeleteLinkCommand command);
 }
